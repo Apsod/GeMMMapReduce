@@ -125,8 +125,14 @@ def check_speed(f1, inputs, mock, runs=10, warmup=3):
 
     start = time.perf_counter()
     for i in range(runs):
+        acc = []
         y1 = f1(*inputs)
         (y1 * mock).sum().backward()
+        with torch.no_grad():
+            for p in inputs:
+                if p.grad is not None:
+                    acc.append(p.grad.sum())
+        acc = sum(acc).item()
 
     return (time.perf_counter() - start) / runs
     

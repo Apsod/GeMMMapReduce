@@ -103,7 +103,7 @@ def regular_attention(q, k, v):
 ```
 
 To compute the backwards pass, we depend on the property that for some commutative monoids, `d fold(X) / d X[i]` can be expressed
-as a function of `fold(X) and X[i]`. See the paper for details.
+as a function of `fold(X) and X[i]`. See the [paper](paper.pdf) for details.
 
 The functions produced by `mk_GeMMMapReduce`, while sometimes proving more efficient than their regular torch counterparts on CPUs, are not
 particularly competetive when running on GPUs. This repo serversas a proof-of-concept of the underlying idea. A possible path forward

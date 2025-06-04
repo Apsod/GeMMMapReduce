@@ -80,7 +80,7 @@ def regular_xentropy(p, t, c):
     return torch.nn.functional.cross_entropy(p @ t.T, c, reduction='none')
 
 if __name__ == '__main__':
-    M, N, D = 1024, 1024, 128
+    M, N, D = 8*1024, 8*1024, 1024
 
     pred = torch.randn(M, D, requires_grad=True, dtype=torch.double)
     trg = torch.randn(N, D, requires_grad=True, dtype=torch.double)
