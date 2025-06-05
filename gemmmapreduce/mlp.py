@@ -35,14 +35,13 @@ def chunker(x, p, q):
     B, M = x.shape
     M, K = p.shape
     K, N = q.shape
-    bslices = list(slicer(B, 512))
-    kslices = list(slicer(K, 512))
+    bslices = list(slicer(B, 256))
+    kslices = list(slicer(K, 256))
     for bslice, kslice in product(bslices, kslices):
         yield (
-            lambda A: (A[0][bslice],),
-            lambda X: (X[0][bslice], X[1][:, kslice], X[2][kslice])
+            ((0, (bslice,)),),
+            ((0, (bslice,)), (1, (slice(None,None,None), kslice)), (2, (kslice,)))
         )
-
 
 MLP = mk_GeMMMapReduce(
         'MLP',
@@ -60,7 +59,7 @@ def regular_mlp(x, p, q):
     return F.relu(x @ p) @ q
 
 if __name__ == '__main__':
-    B, M, N, K = 1024, 1024, 1024, 1024
+    B, M, N, K = 1024, 1024*16, 1024, 512
 
     X = torch.randn(B, M, requires_grad=True, dtype=torch.double)
     P = torch.randn(M, K, requires_grad=True, dtype=torch.double)

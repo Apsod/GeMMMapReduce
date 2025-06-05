@@ -25,9 +25,9 @@ def mk_GeMMMapReduce(
         @staticmethod
         def forward(*X):
             A = init(*X)
-            for aslice, xslice in chunker(*X):
-                a = aslice(A)
-                x = xslice(X)
+            for a_views, x_views in chunker(*X):
+                a = [Ai[*slz] for (Ai, slz) in zip(A, a_views)]
+                x = [Xi[*slz] for (Xi, slz) in zip(X, x_views)]
                 local_a = proj_fold(*x)
                 new_a = binary_reduce(a, local_a)
                 for view, new_val in zip(a, new_a):
@@ -45,15 +45,16 @@ def mk_GeMMMapReduce(
             X = ctx.saved_tensors[:ctx.num_inputs]
             A = ctx.saved_tensors[ctx.num_inputs:]
             gX = [p.new_zeros(p.shape) for p in X]
-            for aslice, xslice in chunker(*X):
+            for a_views, x_views in chunker(*X):
                 # Extract chunks
-                x = xslice(X)
-                a = aslice(A)
-                ga = aslice(gA)
+                a = [Ai[*slz] for (Ai, slz) in zip(A, a_views)]
+                ga = [gAi[*slz] for (gAi, slz) in zip(gA, a_views)]
+                x = [Xi[*slz] for (Xi, slz) in zip(X, x_views)]
+                gx_acc = [gXi[*slz] for (gXi, slz) in zip(gX, x_views)]
                 # recompute and calculate local gradients.
                 gx = proj_fold_bwd(*x, a, ga)
                 # Add local gradients to global.
-                for g, d in zip(xslice(gX), gx):
+                for g, d in zip(gx_acc, gx):
                     g.add_(d)
             return tuple(gX)
     

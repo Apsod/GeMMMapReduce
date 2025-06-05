@@ -22,7 +22,7 @@ def proj_fold_bwd(pred, trg, true, tixs, a, g):
     # h_n : M x N
     h_p = pred @ trg.T
     h_m = true[:, None] == tixs[None, :]
-    
+
     # a_p, g_p : M
     # a_n, g_n : M
     a_p, a_n = a
@@ -59,8 +59,8 @@ def chunker(pred, trg, truth, tixs):
     nslices = list(slicer(N, 256))
     for mslice, nslice in product(mslices, nslices):
         yield (
-            lambda A: (A[0][mslice], A[1][mslice]),
-            lambda X: (X[0][mslice], X[1][nslice], X[2][mslice], X[3][nslice])
+            ((mslice,), (mslice,)),
+            ((mslice,), (nslice,), (mslice,), (nslice,))
         )
 
 XEntropy = mk_GeMMMapReduce(
@@ -72,15 +72,17 @@ XEntropy = mk_GeMMMapReduce(
         binary_reduce=binary_reduce,
         )
 
+@torch.compile(fullgraph=True)
 def gemmmr_xentropy(p, t, c):
     p, n = XEntropy.apply(p, t, c, torch.arange(t.shape[0]))
     return p - n
 
+@torch.compile(fullgraph=True)
 def regular_xentropy(p, t, c):
     return torch.nn.functional.cross_entropy(p @ t.T, c, reduction='none')
 
 if __name__ == '__main__':
-    M, N, D = 8*1024, 8*1024, 1024
+    M, N, D = 1024*4, 1024*4, 1024
 
     pred = torch.randn(M, D, requires_grad=True, dtype=torch.double)
     trg = torch.randn(N, D, requires_grad=True, dtype=torch.double)
